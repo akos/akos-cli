@@ -6,6 +6,7 @@ const path = require('path');
 const opn = require('opn');
 const webpackDevMiddleware = require('koa-webpack-dev-middleware');
 const webpackHotMiddleware = require('koa-webpack-hot-middleware');
+const htmlWebpackUrlMiddleware = require('../lib/html-webpack-url-middleware');
 
 /**
  * Parse Commands
@@ -44,24 +45,11 @@ const { compiler, devOptions } = require('vusion-cli/lib/dev').prepare(require('
 
 // Auto redirect entry page url
 if (vusionConfig.entry && vusionConfig.entry.pages) {
-    let pages = vusionConfig.entry.pages;
-    if (!Array.isArray(pages))
-        pages = [pages];
-    let indexUrl;
-    const urls = pages.map((page) => {
-        const url = path.join(vusionConfig.output.publicPath, page);
-        if (page === 'index')
-            indexUrl = url;
-        return url;
-    });
-    app.use(async (ctx) => {
-        if (ctx.url === '/')
-            indexUrl && (ctx.url = indexUrl);
-        else {
-            const index = urls.indexOf(ctx.url);
-            ~index && (ctx.url = urls[index]);
-        }
-    })
+    app.use(htmlWebpackUrlMiddleware(
+        vusionConfig.entry.pages,
+        akosConfig.base || '/',
+        vusionConfig.webpack.output.publicPath,
+    ));
 }
 
 app.use(webpackDevMiddleware(compiler, devOptions));

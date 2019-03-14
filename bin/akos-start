@@ -4,6 +4,9 @@ const checker = require('../lib/checker');
 
 const path = require('path');
 const opn = require('opn');
+const mount = require('koa-mount');
+const serve = require('koa-static');
+const htmlWebpackUrlMiddleware = require('../lib/html-webpack-url-middleware');
 
 /**
  * Parse Commands
@@ -23,6 +26,7 @@ checker.checkUpgrade();
  * Execute Task
  */
 const akosConfig = global.akosConfig = require('../config/resolve')();
+const vusionConfig = global.vusionConfig = require('vusion-cli/config/resolve')();
 
 if (program.port)
     akosConfig.port = program.port;
@@ -35,7 +39,20 @@ const url = `http://${host}:${port}`;
 const entryPath = path.resolve(process.cwd(), akosConfig.entry);
 const app = require(entryPath)(akosConfig);
 
-app.listen(port, host, (err) => {
+// Auto redirect entry page url
+if (vusionConfig.entry && vusionConfig.entry.pages) {
+    app.use(htmlWebpackUrlMiddleware(
+        vusionConfig.entry.pages,
+        akosConfig.base || '/',
+        vusionConfig.webpack.output.publicPath,
+    ));
+}
+
+app.use(mount(vusionConfig.webpack.output.publicPath, serve(vusionConfig.webpack.output.path), {
+    maxage: 1000 * 60 * 60 * 1,
+}));
+
+app.listen(port, (err) => {
     if (err)
         return console.error(err);
 
