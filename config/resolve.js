@@ -17,5 +17,10 @@ module.exports = function (relativePath = 'akos.config.js') {
     if (!TYPES.includes(config.type))
         throw new Error('Unknown project type!');
 
+    config.root = config.root || process.cwd();
+    config.srcPath = config.srcPath || './src';
+    config.routesPath = path.resolve(config.root, config.routesPath || path.join(config.srcPath, 'routes.js'));
+    config.controllersPath = path.resolve(config.root, config.controllersPath || path.join(config.srcPath, 'controllers'));
+
     return config;
 };
